@@ -1,0 +1,12 @@
+
+*.dll
+EntityFrameworkWithSQLite/.vs/EntityFrameworkWithSQLite/v14/.suo
+EntityFrameworkWithSQLite\EntityFrameworkWithSQLite.Core\bin/
+EntityFrameworkWithSQLite\EntityFrameworkWithSQLite.Core\obj/
+EntityFrameworkWithSQLite\EntityFrameworkWithSQLite.EntityFramework\bin/
+EntityFrameworkWithSQLite\EntityFrameworkWithSQLite.EntityFramework\obj/
+EntityFrameworkWithSQLite\EntityFrameworkWithSQLite.Test\bin/
+EntityFrameworkWithSQLite\EntityFrameworkWithSQLite.Test\obj/
+EntityFrameworkWithSQLite\EntityFrameworkWithSQLite\bin/
+EntityFrameworkWithSQLite\EntityFrameworkWithSQLite\obj/
+EntityFrameworkWithSQLite\packages/
