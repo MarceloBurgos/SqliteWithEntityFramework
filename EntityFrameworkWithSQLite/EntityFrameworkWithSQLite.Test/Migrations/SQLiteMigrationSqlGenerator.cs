@@ -8,6 +8,7 @@ using System.Data.Entity.Migrations.Model;
 using System.Data.Entity.Migrations.Sql;
 using System.Data.SQLite.EF6;
 using System.Diagnostics;
+using System.Linq;
 
 namespace EntityFrameworkWithSQLite.Test.Migrations
 {
@@ -39,8 +40,33 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
         {
             List<MigrationStatement> migrationStatements = new List<MigrationStatement>();
 
-            foreach (MigrationOperation migrationOperation in migrationOperations)
-                migrationStatements.Add(GenerateStatement(migrationOperation));
+            //TODO: Esto está mega feo, pero funciona para mandar los migration statements de foreign key al momento de crear las tablas
+            var exceptFkOperations = migrationOperations.Where(mo => !(mo is AddForeignKeyOperation));
+            var fkOperationsOnly = migrationOperations.Where(mo => mo is AddForeignKeyOperation).ToList();
+
+            foreach (MigrationOperation migrationOperation in exceptFkOperations)
+            {
+                MigrationStatement migrationStatement = null;
+                if (migrationOperation is CreateTableOperation)
+                {
+                    var createTableOperation = (CreateTableOperation)migrationOperation;
+                    var fkOperations = fkOperationsOnly.Cast<AddForeignKeyOperation>()
+                        .Where(x => x.DependentTable == createTableOperation.Name)
+                        .ToList();
+                    if (fkOperations.Any())
+                    {
+                        migrationStatement = GenerateStatement(migrationOperation, fkOperations);
+                    }
+                    else
+                    {
+                        migrationStatement = GenerateStatement(migrationOperation);
+                    }
+                }
+
+                if (migrationStatement != null)
+                    migrationStatements.Add(migrationStatement);
+            }
+
             return migrationStatements;
         }
 
@@ -52,10 +78,24 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
             return migrationStatement;
         }
 
+        private MigrationStatement GenerateStatement(MigrationOperation migrationOperation, IList<AddForeignKeyOperation> fkOperations)
+        {
+            MigrationStatement migrationStatement = new MigrationStatement();
+            migrationStatement.BatchTerminator = BATCHTERMINATOR;
+            migrationStatement.Sql = GenerateSqlStatement(migrationOperation, fkOperations);
+            return migrationStatement;
+        }
+
         private string GenerateSqlStatement(MigrationOperation migrationOperation)
         {
             dynamic concreteMigrationOperation = migrationOperation;
             return GenerateSqlStatementConcrete(concreteMigrationOperation);
+        }
+
+        private string GenerateSqlStatement(MigrationOperation migrationOperation, IList<AddForeignKeyOperation> fkOperations)
+        {
+            dynamic concreteMigrationOperation = migrationOperation;
+            return GenerateSqlStatementConcrete(concreteMigrationOperation, fkOperations);
         }
 
         private string GenerateSqlStatementConcrete(MigrationOperation migrationOperation)
@@ -215,7 +255,13 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
              * Actually we do not create relationship at all
             */
 
-            return "";
+            // AGUSTIN: ONLY WORKS WHEN CREATE TABLE
+
+            SQLiteDdlBuilder ddlBuilder = new SQLiteDdlBuilder();
+            ddlBuilder.AppendSql($" CONSTRAINT {migrationOperation.Name.Replace("dbo.", "")} FOREIGN KEY (");   // TODO: Está feo lo de sacar asi los "dbo.", pero sino da syntax error SQLite
+            ddlBuilder.AppendIdentifierList(migrationOperation.DependentColumns);
+            ddlBuilder.AppendSql($") REFERENCES \"{migrationOperation.PrincipalTable.Replace("dbo.", "")}\"");  // TODO: Está feo lo de sacar asi los "dbo.", pero sino da syntax error SQLite
+            return ddlBuilder.GetCommandText();
         }
 
         #endregion
@@ -248,7 +294,7 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
 
         }
 
-        private string GenerateSqlStatementConcrete(CreateTableOperation migrationOperation)
+        private string GenerateSqlStatementConcrete(CreateTableOperation migrationOperation, IList<AddForeignKeyOperation> fkOperations = null)
         {
             SQLiteDdlBuilder ddlBuilder = new SQLiteDdlBuilder();
 
@@ -259,6 +305,7 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
 
             bool first = true;
             string autoincrementColumnName = null;
+            bool isGuidPk = false;
             foreach (ColumnModel column in migrationOperation.Columns)
             {
                 if (first)
@@ -269,13 +316,23 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
                 ddlBuilder.AppendSql(" ");
                 ddlBuilder.AppendIdentifier(column.Name);
                 ddlBuilder.AppendSql(" ");
-                if (column.IsIdentity)
+                if (column.IsIdentity)  // Si es una "identity" de tipo UNIQUEIDENTIFIER, la generación la hará la base de datos con NewSequentialGuid como default value
                 {
                     autoincrementColumnName = column.Name;
-                    ddlBuilder.AppendSql(" integer constraint ");
-                    ddlBuilder.AppendIdentifier(ddlBuilder.CreateConstraintName("PK", migrationOperation.Name));
-                    ddlBuilder.AppendSql(" primary key autoincrement");
-                    ddlBuilder.AppendNewLine();
+
+                    if (column.TypeUsage.EdmType.Name == typeof(Guid).Name)
+                    {
+                        ddlBuilder.AppendSql(" uniqueidentifier not null ");
+                        ddlBuilder.AppendNewLine();
+                        isGuidPk = true;
+                    }
+                    else
+                    {
+                        ddlBuilder.AppendSql(" integer constraint ");
+                        ddlBuilder.AppendIdentifier(ddlBuilder.CreateConstraintName("PK", migrationOperation.Name));
+                        ddlBuilder.AppendSql(" primary key autoincrement");
+                        ddlBuilder.AppendNewLine();
+                    }
                 }
                 else
                 {
@@ -286,10 +343,20 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
 
             }
 
-            if (migrationOperation.PrimaryKey != null && autoincrementColumnName == null)
+
+            if (migrationOperation.PrimaryKey != null && (autoincrementColumnName == null || isGuidPk))
             {
                 ddlBuilder.AppendSql(",");
                 ddlBuilder.AppendSql(GenerateSqlStatementConcrete(migrationOperation.PrimaryKey));
+            }
+
+            if (fkOperations != null)
+            {
+                foreach (var foreignKeyOperation in fkOperations)
+                {
+                    ddlBuilder.AppendSql(",");
+                    ddlBuilder.AppendSql(GenerateSqlStatementConcrete(foreignKeyOperation));
+                }
             }
 
             ddlBuilder.AppendSql(")");

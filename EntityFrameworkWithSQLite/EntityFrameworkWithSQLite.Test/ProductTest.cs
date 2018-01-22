@@ -13,7 +13,8 @@ namespace EntityFrameworkWithSQLite.Test
         [TestMethod]
         public void CreateProductWithValidValues_ShouldPersist()
         {
-            using (var connection = new SQLiteConnection("data source=:memory:"))
+            //using (var connection = new SQLiteConnection("data source=:memory:"))
+            using (var connection = new SQLiteConnection("data source=MarketDB.sqlite3"))
             {
                 connection.Open();
                 var sqliteInitilizer = new MigrateDatabaseToLatestVersion<MarketSystemContext, ContextMigrationConfiguration>(true);
