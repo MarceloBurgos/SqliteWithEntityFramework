@@ -3,6 +3,7 @@ using System.Data.Entity;
 using System.Data.Entity.ModelConfiguration.Conventions;
 using EntityFrameworkWithSQLite.Core;
 using EntityFrameworkWithSQLite.EntityFramework.Configurations;
+using EntityFrameworkWithSQLite.EntityFramework.Conventions;
 using EntityFrameworkWithSQLite.EntityFramework.DbInitializers;
 
 namespace EntityFrameworkWithSQLite.EntityFramework
@@ -22,11 +23,13 @@ namespace EntityFrameworkWithSQLite.EntityFramework
             : base(connection, false)
         {
             _initializer = initializer;
+            //Database.SetInitializer(initializer);
         }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             modelBuilder.Conventions.Remove<PluralizingTableNameConvention>();
+            modelBuilder.Conventions.Add(new ForeignKeyNamingConvention());
 
             modelBuilder.Configurations.Add(new MarketSystemConfiguration());
             modelBuilder.Configurations.Add(new InvoiceConfiguration());

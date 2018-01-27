@@ -8,8 +8,7 @@ namespace EntityFrameworkWithSQLite.EntityFramework.Configurations
     {
         public MarketSystemConfiguration()
         {
-            ToTable("MarketSystem");
-            HasKey(x => x.Id).Property(x => x.Id).HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
+            HasKey(x => x.Id).Property(x => x.Id).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
             Property(x => x.SystemName).IsRequired();
             HasMany(x => x.Products);
             HasMany(x => x.Invoices);

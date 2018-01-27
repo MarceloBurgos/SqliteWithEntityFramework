@@ -12,6 +12,7 @@ namespace EntityFrameworkWithSQLite.Core
 
         public MarketSystem()
         {
+            Id = Guid.NewGuid();
             SystemName = "MarketSystem";
             Invoices = new List<Invoice>();
             Products = new List<Product>();

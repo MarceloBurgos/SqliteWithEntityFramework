@@ -8,7 +8,7 @@ namespace EntityFrameworkWithSQLite.EntityFramework.Configurations
     {
         public ProductConfiguration()
         {
-            HasKey(x => x.Id).Property(x => x.Id).HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
+            HasKey(x => x.Id).Property(x => x.Id).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
             Property(x => x.Name).IsRequired();
             Property(x => x.Price).IsRequired();
         }

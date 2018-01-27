@@ -17,8 +17,9 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
     /// </summary>
     public sealed class SQLiteMigrationSqlGenerator : MigrationSqlGenerator
     {
-
         const string BATCHTERMINATOR = ";\r\n";
+
+        public IList<MigrationStatement> MigrationStatements { get; set; }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="SQLiteMigrationSqlGenerator"/> class.
@@ -53,6 +54,7 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
                     var fkOperations = fkOperationsOnly.Cast<AddForeignKeyOperation>()
                         .Where(x => x.DependentTable == createTableOperation.Name)
                         .ToList();
+
                     if (fkOperations.Any())
                     {
                         migrationStatement = GenerateStatement(migrationOperation, fkOperations);
@@ -67,6 +69,7 @@ namespace EntityFrameworkWithSQLite.Test.Migrations
                     migrationStatements.Add(migrationStatement);
             }
 
+            MigrationStatements = migrationStatements;
             return migrationStatements;
         }
 

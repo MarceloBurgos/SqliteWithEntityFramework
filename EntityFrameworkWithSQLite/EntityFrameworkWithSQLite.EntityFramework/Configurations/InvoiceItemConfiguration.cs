@@ -8,7 +8,7 @@ namespace EntityFrameworkWithSQLite.EntityFramework.Configurations
     {
         public InvoiceItemConfiguration()
         {
-            HasKey(x => x.Id).Property(x => x.Id).HasDatabaseGeneratedOption(DatabaseGeneratedOption.Identity);
+            HasKey(x => x.Id).Property(x => x.Id).HasDatabaseGeneratedOption(DatabaseGeneratedOption.None);
             Property(x => x.Price).IsRequired();
             Property(x => x.Quantity).IsRequired();
             HasRequired(x => x.Product);
