@@ -3,8 +3,6 @@ using System.Data.Entity;
 using System.Data.SQLite;
 using System.IO;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
 using EntityFrameworkWithSQLite.Core;
 using EntityFrameworkWithSQLite.EntityFramework;
 using EntityFrameworkWithSQLite.Test.Migrations;
@@ -15,7 +13,7 @@ namespace EntityFrameworkWithSQLite.Test
     [TestClass]
     public class ProductTest
     {
-        private static string schemaQuery;
+        private static string _schemaQuery;
         private SQLiteConnection _connection;
         private MarketSystem _root;
         private MarketSystemContext _context;
@@ -34,7 +32,7 @@ namespace EntityFrameworkWithSQLite.Test
                 context.Database.Initialize(true);
 
                 var generator = (SQLiteMigrationSqlGenerator)configuration.GetSqlGenerator("System.Data.SQLite");
-                schemaQuery = string.Join("; \n\r", generator.MigrationStatements.Select(x => x.Sql));
+                _schemaQuery = string.Join("; \n\r", generator.MigrationStatements.Select(x => x.Sql));
             }
         }
 
@@ -49,7 +47,7 @@ namespace EntityFrameworkWithSQLite.Test
             _context = new MarketSystemContext(_connection, null);
 
             var comm = _connection.CreateCommand();
-            comm.CommandText = schemaQuery;
+            comm.CommandText = _schemaQuery;
             comm.ExecuteNonQuery();
 
             _context.MarketSystem.Add(_root);
